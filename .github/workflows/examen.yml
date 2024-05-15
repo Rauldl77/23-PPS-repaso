@@ -1,10 +1,10 @@
-name: Devops
+name: Devops version 2
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - src/**
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - src/**
   pull_request:
     branches: [ main ] 
     paths:
@@ -44,6 +44,32 @@ jobs:
           push: true 
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/repaso:latest
 
-  # aws:
-  #   name: Deploy image to aws
-  #   runs-on: ubuntu-latest
+  aws:
+    name: Deploy image to aws
+    runs-on: ubuntu-latest
+    needs: build
+    steps:  
+    - name: multiple command
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.AWS_HOSTNAME }}
+        username: ${{ secrets.AWS_USERNAME }}
+        key: ${{ secrets.AWS_PRIVATEKEY }}
+        port: 22  # ${{ secrets.PORT }}
+        script: |
+            sleep 40
+            docker stop web && docker rm web
+            docker rmi ${{ secrets.DOCKERHUB_USERNAME }}/repaso
+            docker run -d -p 80:8000 --name web ${{ secrets.DOCKERHUB_USERNAME }}/repaso
+
+# health_check_job:
+#     runs-on: ubuntu-latest
+#     name: Check for status 200 and title text "lokerse.dev"
+#     needs: aws
+#     steps:
+#       - uses: actions/checkout@v2
+#       - id: test
+#         uses: johnlokerse/website-healthcheck@v2
+#         with:
+#           web-url: "http://3.85.30.237/"
+#           scan-for-text: "Hello from Flask App!"
